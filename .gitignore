@@ -1,0 +1,327 @@
+# ===============================================
+# Visual Studio .gitignore for ClaudeCodeForVS
+# 支持: Visual Studio, VSCode, 前端开发, .NET 项目
+# ===============================================
+
+# -------------- Visual Studio --------------
+# Visual Studio 用户特定文件
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio 构建结果
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 2015/2017 缓存选项
+.vs/
+*.cachefile
+
+# Visual Studio 代码分析
+*.vsidx
+
+# MSTest 测试结果
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NuGet 包
+*.nupkg
+# NuGet 包目录
+packages/
+# NuGet 项目符号包
+*.snupkg
+
+# Visual Studio 构建日志
+*.log
+*.tlog
+*.vspx
+*.vspscc
+
+# Windows 构建结果
+*.cache
+*.ilk
+*.meta
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# 集成测试结果
+*.trx
+*.coverage
+*.coveragexml
+
+# 加载的 Visual Studio 插件
+*.AddIn
+
+# -------------- .NET --------------
+# .NET 目录
+bin/
+obj/
+
+# .NET Core 项目
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# StyleCop
+StyleCopReport.xml
+
+# -------------- JetBrains Rider --------------
+.idea/
+*.sln.iml
+
+# -------------- VSCode --------------
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# VS Code 本地历史
+.history/
+
+# VS Code 扩展目录
+.vscode/extensions
+
+# -------------- 前端开发 --------------
+# Node.js 依赖
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 覆盖率目录
+coverage/
+*.lcov
+.nyc_output
+
+# Grunt 中间和输出目录
+.grunt
+
+# Bower 依赖目录
+bower_components
+
+# node-waf 配置
+.lock-wscript
+
+# 编译的二进制插件
+build/Release
+
+# 依赖目录
+node_modules/
+jspm_packages/
+
+# TypeScript v1 声明文件
+typings/
+
+# TypeScript 缓存
+*.tsbuildinfo
+
+# 可选的 npm 缓存目录
+.npm
+
+# 可选的 eslint 缓存
+.eslintcache
+
+# Microbundle 缓存
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# 可选的 REPL 历史
+.node_repl_history
+
+# yarn v2 依赖
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# -------------- React 前端 (Frontend/) --------------
+# React 构建输出
+Frontend/dist/
+Frontend/build/
+
+# 环境变量
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vite
+.vite/
+
+# -------------- OS 生成文件 --------------
+# Windows 缩略图缓存文件
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+
+# Windows 链接文件
+*.lnk
+
+# Windows 资源管理器桌面.ini
+Desktop.ini
+
+# Windows 回收站
+$RECYCLE.BIN/
+
+# Macintosh
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# -------------- 日志和临时文件 --------------
+# 日志文件
+*.log
+logs/
+temp/
+tmp/
+
+# Claude Code 特定
+.claude/settings.local.json
+.claude/cache/
+
+# -------------- 备份和编辑器临时文件 --------------
+# 备份文件
+*.bak
+*.backup
+*.tmp
+*.temp
+
+# Vim 交换文件
+[._]*.swo
+[._]*.swp
+*~
+
+# Emacs 恢复文件
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# -------------- 测试和覆盖率 --------------
+# 测试结果
+TestResults/
+test-results/
+*.trx
+*.coverage
+*.coveragexml
+
+# -------------- 部署和发布 --------------
+# 发布包
+*.vsix
+*.zip
+*.tar.gz
+*.rar
+
+# 部署配置
+Deployment/
+Publish/
+
+# -------------- 特定于 ClaudeCodeForVS --------------
+# 本地配置
+appsettings.local.json
+appsettings.Development.json
+appsettings.Production.json
+
+# Claude CLI 相关
+claude-logs/
+claude-sessions/
+claude-cache/
+
+# 扩展临时文件
+Extensions/Temp/
+Extensions/Cache/
+
+# =============== 例外文件 (不要忽略) ===============
+# 保留重要的配置文件
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.gitkeep
+!.gitattributes
+!.editorconfig
+
+# 保留 README 文件
+!README.md
+!readme.md
+
+# 保留许可证文件
+!LICENSE
+!LICENCE
+
+# 保留文档
+!*.md
+!docs/
+
+# =============== 注释 ===============
+# 此文件针对 ClaudeCodeForVS 项目定制
+# 项目包含: Visual Studio 扩展、.NET 8 后台服务、React 前端
+# 支持工具: Visual Studio 2022、VSCode、Node.js
+# 架构: WebView2 + 进程外服务

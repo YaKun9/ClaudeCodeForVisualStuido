@@ -1,0 +1,64 @@
+:root {
+  /* Prefer VS host theme variables when available, fall back to sensible defaults. */
+  --bg: var(--vscode-editor-background, #1a1a1a);
+  --panel: var(--vscode-sideBar-background, #252526);
+  --panel2: var(--vscode-editorWidget-background, #2d2d30);
+  --border: var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+  --text: var(--vscode-editor-foreground, #d4d4d4);
+  --muted: var(--vscode-descriptionForeground, rgba(212, 212, 212, 0.7));
+  --accent: var(--vscode-button-background, #0e639c);
+  --accentHover: var(--vscode-button-hoverBackground, #1177bb);
+  --inputBg: var(--vscode-input-background, #3c3c3c);
+  --inputBorder: var(--vscode-input-border, rgba(255, 255, 255, 0.18));
+  --focus: var(--vscode-focusBorder, #007fd4);
+
+  /* Claude brand colors */
+  --claude-orange: #D97757;
+  --claude-orange-hover: #E8967A;
+
+  --shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  --radius: 6px;
+
+  --bubbleAssistant: color-mix(in srgb, var(--panel2) 92%, #000 8%);
+  --bubbleUser: color-mix(in srgb, var(--accent) 22%, var(--panel2));
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Segoe UI, system-ui, -apple-system, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+  border: 2px solid var(--bg); /* Creates padding effect */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

@@ -1,0 +1,569 @@
+﻿using ClaudeCodeForVS.Models;
+using ClaudeCodeForVS.Services;
+using ClaudeCodeForVS.ViewModels;
+using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.Web.WebView2.Core;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace ClaudeCodeForVS
+{
+    public partial class ClaudeChatControl : UserControl
+    {
+        private readonly ChatViewModel _viewModel;
+        private bool _initialized;
+
+        public ClaudeChatControl()
+        {
+            try
+            {
+                LogService.Debug("ClaudeChatControl constructor started");
+                InitializeComponent();
+                LogService.Debug("XAML components initialized");
+
+                _viewModel = new ChatViewModel();
+                LogService.Debug("ChatViewModel created");
+
+                Loaded += OnLoaded;
+                Unloaded += OnUnloaded;
+                VSColorTheme.ThemeChanged += OnThemeChanged;
+                LogService.Debug("ClaudeChatControl constructor completed");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("Failed to initialize ClaudeChatControl", ex);
+                throw;
+            }
+        }
+
+        private async void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (!_initialized)
+                {
+                    _initialized = true;
+                    await InitializeWebViewAsync();
+                    // Theme will be applied when NavigationCompleted event fires / 主题将在 NavigationCompleted 触发时应用
+                }
+                else
+                {
+                    // Re-subscribe to WebView events if they were unsubscribed in OnUnloaded / 重新订阅 OnUnloaded 中取消的事件
+                    if (Browser?.CoreWebView2 != null)
+                    {
+                        Browser.CoreWebView2.WebMessageReceived -= OnWebMessageReceived;
+                        Browser.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+                        Browser.CoreWebView2.NavigationCompleted -= OnNavigationCompleted;
+                        Browser.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
+                    }
+                }
+
+                // Ensure we handle theme changes / 确保处理主题变化
+                VSColorTheme.ThemeChanged -= OnThemeChanged;
+                VSColorTheme.ThemeChanged += OnThemeChanged;
+
+                // Ensure we are hooked to the view model / 确保已绑定 ViewModel
+                UnhookViewModel();
+                HookViewModel();
+
+                await PushFullStateAsync();
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[OnLoaded] Failed to initialize control", ex);
+            }
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            UnhookViewModel();
+            VSColorTheme.ThemeChanged -= OnThemeChanged;
+
+            try
+            {
+                if (Browser?.CoreWebView2 != null)
+                {
+                    Browser.CoreWebView2.WebMessageReceived -= OnWebMessageReceived;
+                    Browser.CoreWebView2.NavigationCompleted -= OnNavigationCompleted;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[OnUnloaded] WebView2 teardown error", ex);
+            }
+        }
+
+        private void HookViewModel()
+        {
+            _viewModel.Messages.CollectionChanged += OnMessagesCollectionChanged;
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+            foreach (var message in _viewModel.Messages)
+            {
+                HookMessage(message);
+            }
+        }
+
+        private void UnhookViewModel()
+        {
+            _viewModel.Messages.CollectionChanged -= OnMessagesCollectionChanged;
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+
+            foreach (var message in _viewModel.Messages)
+            {
+                UnhookMessage(message);
+            }
+        }
+
+        private void HookMessage(ChatMessage message)
+        {
+            if (message == null)
+                return;
+            message.PropertyChanged += OnMessagePropertyChanged;
+        }
+
+        private void UnhookMessage(ChatMessage message)
+        {
+            if (message == null)
+                return;
+            message.PropertyChanged -= OnMessagePropertyChanged;
+        }
+
+        private async Task InitializeWebViewAsync()
+        {
+            try
+            {
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string userDataFolder = Path.Combine(localAppData, "ClaudeCodeForVS", "WebView2");
+                Directory.CreateDirectory(userDataFolder);
+
+                CoreWebView2Environment environment = await CoreWebView2Environment.CreateAsync(
+                    browserExecutableFolder: null,
+                    userDataFolder: userDataFolder);
+
+                await Browser.EnsureCoreWebView2Async(environment);
+
+                if (Browser.CoreWebView2 == null)
+                {
+                    ShowFallback(
+                        "WebView2 init failed\n\n" +
+                        "CoreWebView2 is null after EnsureCoreWebView2Async.\n\n" +
+                        "UserDataFolder:\n" + userDataFolder);
+                    return;
+                }
+
+                Browser.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+                Browser.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
+
+                string assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string wwwrootDir = Path.Combine(assemblyDir, "wwwroot");
+
+                if (!Directory.Exists(wwwrootDir))
+                {
+                    ShowFallback(
+                        "wwwroot not found\n\n" +
+                        "Expected folder:\n" + wwwrootDir + "\n\n" +
+                        "Ensure wwwroot is included in the VSIX and copied to output.");
+                    return;
+                }
+
+                // Use a virtual host mapping instead of file:// to avoid local file access restrictions. / 使用虚拟主机映射代替 file://，避免本地文件访问限制。
+                Browser.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    "app",
+                    wwwrootDir,
+                    CoreWebView2HostResourceAccessKind.Allow);
+
+                Browser.CoreWebView2.Navigate("https://app/index.html");
+            }
+            catch (Exception ex)
+            {
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string userDataFolder = Path.Combine(localAppData, "ClaudeCodeForVS", "WebView2");
+                ShowFallback(
+                    "WebView2 init failed\n\n" +
+                    "UserDataFolder:\n" + userDataFolder + "\n\n",
+                    ex);
+            }
+        }
+
+        private void ShowFallback(string message)
+        {
+            try
+            {
+                Browser.Visibility = Visibility.Collapsed;
+                Fallback.Visibility = Visibility.Visible;
+                FallbackText.Text = message ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[ShowFallback] Failed to show fallback UI", ex);
+            }
+        }
+
+        private void ShowFallback(string title, Exception ex)
+        {
+            string text = title;
+            if (ex != null)
+            {
+                text += ex.ToString();
+            }
+            ShowFallback(text);
+        }
+
+        private async void OnMessagesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            try
+            {
+                if (e.NewItems != null)
+                {
+                    foreach (var item in e.NewItems.OfType<ChatMessage>())
+                    {
+                        HookMessage(item);
+                    }
+                }
+
+                if (e.OldItems != null)
+                {
+                    foreach (var item in e.OldItems.OfType<ChatMessage>())
+                    {
+                        UnhookMessage(item);
+                    }
+                }
+
+                await PushFullStateAsync();
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[OnMessagesCollectionChanged] Error handling collection change", ex);
+            }
+        }
+
+        private async void OnMessagePropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            try
+            {
+                if (string.Equals(e.PropertyName, nameof(ChatMessage.Content), StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(e.PropertyName, nameof(ChatMessage.Role), StringComparison.OrdinalIgnoreCase))
+                {
+                    await PushFullStateAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[OnMessagePropertyChanged] Error handling property change", ex);
+            }
+        }
+
+        private async void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            try
+            {
+                if (string.Equals(e.PropertyName, nameof(ChatViewModel.IsRunning), StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(e.PropertyName, nameof(ChatViewModel.UserInput), StringComparison.OrdinalIgnoreCase))
+                {
+                    await PushFullStateAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[OnViewModelPropertyChanged] Error handling property change", ex);
+            }
+        }
+
+        private void OnWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            try
+            {
+                var json = e.WebMessageAsJson;
+                if (string.IsNullOrWhiteSpace(json))
+                    return;
+
+                var msg = JObject.Parse(json);
+                var type = msg.Value<string>("type");
+
+                if (string.Equals(type, "run", StringComparison.OrdinalIgnoreCase))
+                {
+                    var text = msg.Value<string>("text") ?? string.Empty;
+                    _viewModel.UserInput = text;
+
+                    if (_viewModel.RunCommand.CanExecute(null))
+                    {
+                        _viewModel.RunCommand.Execute(null);
+                    }
+                    return;
+                }
+
+                if (string.Equals(type, "cancel", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (_viewModel.CancelCommand.CanExecute(null))
+                    {
+                        _viewModel.CancelCommand.Execute(null);
+                    }
+                    return;
+                }
+
+                if (string.Equals(type, "requestState", StringComparison.OrdinalIgnoreCase))
+                {
+                    _ = PushFullStateAsync();
+                    return;
+                }
+
+                if (string.Equals(type, "getEditorContext", StringComparison.OrdinalIgnoreCase))
+                {
+                    _ = SendEditorContextAsync();
+                    return;
+                }
+
+                if (string.Equals(type, "getProjectFiles", StringComparison.OrdinalIgnoreCase))
+                {
+                    _ = SendProjectFilesAsync();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[OnWebMessageReceived] Failed to process message", ex);
+            }
+        }
+
+        private Task PushFullStateAsync()
+        {
+            try
+            {
+                if (Browser?.CoreWebView2 == null)
+                {
+                    return Task.CompletedTask;
+                }
+
+                var payload = new
+                {
+                    type = "state",
+                    isRunning = _viewModel.IsRunning,
+                    messages = _viewModel.Messages.Select(m => new
+                    {
+                        role = m.Role,
+                        content = m.Content
+                    }).ToArray()
+                };
+
+                var json = JsonConvert.SerializeObject(payload);
+                Browser.CoreWebView2.PostWebMessageAsJson(json);
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[PushFullStateAsync] Failed to push state", ex);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private async Task SendEditorContextAsync()
+        {
+            try
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                var context = EditorContextService.Instance.GetCurrentContext();
+
+                if (Browser?.CoreWebView2 == null)
+                    return;
+
+                var payload = new
+                {
+                    type = "editorContext",
+                    context = context != null ? new
+                    {
+                        filePath = context.FilePath,
+                        fileName = context.FileName,
+                        relativePath = context.RelativePath,
+                        language = context.Language,
+                        selectedText = context.SelectedText,
+                        selectionStartLine = context.SelectionStartLine,
+                        selectionEndLine = context.SelectionEndLine,
+                        currentLine = context.CurrentLine,
+                        hasSelection = context.HasSelection
+                    } : null
+                };
+
+                var json = JsonConvert.SerializeObject(payload);
+                await Browser.CoreWebView2.ExecuteScriptAsync($"window.postMessage({json}, '*');");
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[SendEditorContextAsync] Failed to send editor context", ex);
+            }
+        }
+
+        private async Task SendProjectFilesAsync()
+        {
+            try
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                var files = EditorContextService.Instance.GetProjectFiles();
+
+                LogService.Debug($"[SendProjectFilesAsync] Found {files.Count} files");
+
+                if (Browser?.CoreWebView2 == null)
+                    return;
+
+                var payload = new
+                {
+                    type = "projectFiles",
+                    files = files.Select(f => new
+                    {
+                        name = f.Name,
+                        path = f.Path,
+                        directory = f.Directory
+                    }).ToArray()
+                };
+
+                var json = JsonConvert.SerializeObject(payload);
+                LogService.Debug($"[SendProjectFilesAsync] Sending message: {json.Substring(0, Math.Min(200, json.Length))}...");
+                await Browser.CoreWebView2.ExecuteScriptAsync($"window.postMessage({json}, '*');");
+            }
+            catch (Exception ex)
+            {
+                LogService.Debug($"[SendProjectFilesAsync] Error: {ex.Message}");
+            }
+        }
+
+        private void OnThemeChanged(ThemeChangedEventArgs e)
+        {
+            _ = UpdateThemeAsync();
+        }
+
+        private async void OnNavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
+        {
+            try
+            {
+                if (e.IsSuccess)
+                {
+                    await UpdateThemeAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[OnNavigationCompleted] Error handling navigation completion", ex);
+            }
+        }
+
+        private async Task UpdateThemeAsync()
+        {
+            if (Browser?.CoreWebView2 == null)
+                return;
+
+            var css = GenerateThemeCss();
+
+            var script = $@"
+                (function() {{
+                    let style = document.getElementById('vs-theme-style');
+                    if (!style) {{
+                        style = document.createElement('style');
+                        style.id = 'vs-theme-style';
+                        document.head.appendChild(style);
+                    }}
+                    style.textContent = `{css}`;
+                }})();
+            ";
+
+            try
+            {
+                await Browser.CoreWebView2.ExecuteScriptAsync(script);
+            }
+            catch (Exception ex)
+            {
+                LogService.Error("[UpdateThemeAsync] Failed to execute theme script", ex);
+            }
+        }
+
+        private static string GenerateThemeCss()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(":root {");
+
+            // Editor colors / 编辑器颜色
+            sb.AppendLine($"  --vscode-editor-background: {GetColor(EnvironmentColors.ToolWindowBackgroundColorKey)};");
+            sb.AppendLine($"  --vscode-editor-foreground: {GetColor(EnvironmentColors.ToolWindowTextColorKey)};");
+            sb.AppendLine($"  --vscode-sideBar-background: {GetColor(EnvironmentColors.ToolWindowBackgroundColorKey)};");
+
+            // Borders / 边框
+            sb.AppendLine($"  --vscode-panel-border: {GetColor(EnvironmentColors.ToolWindowBorderColorKey)};");
+            sb.AppendLine($"  --vscode-widget-border: {GetColor(EnvironmentColors.ToolWindowBorderColorKey)};");
+            sb.AppendLine($"  --vscode-focusBorder: {GetColor(EnvironmentColors.SystemHighlightColorKey)};");
+
+            // Inputs / 输入框
+            sb.AppendLine($"  --vscode-input-background: {GetColor(EnvironmentColors.ComboBoxBackgroundColorKey)};");
+            sb.AppendLine($"  --vscode-input-foreground: {GetColor(EnvironmentColors.ComboBoxTextColorKey)};");
+            sb.AppendLine($"  --vscode-input-border: {GetColor(EnvironmentColors.ComboBoxBorderColorKey)};");
+            sb.AppendLine($"  --vscode-input-placeholderForeground: {GetColor(EnvironmentColors.SystemGrayTextColorKey)};");
+
+            // Buttons / 按钮
+            // Use SystemHighlight for primary action buttons to match VS Code style / 主按钮使用 SystemHighlight，以匹配 VS Code 风格
+            sb.AppendLine($"  --vscode-button-background: {GetColor(EnvironmentColors.SystemHighlightColorKey)};");
+            sb.AppendLine($"  --vscode-button-foreground: {GetColor(EnvironmentColors.SystemHighlightTextColorKey)};");
+            // For hover, we don't have a perfect key, so we reuse the highlight color but rely on CSS opacity or brightness if needed. / 悬停色缺少精确键值，复用高亮色并用 CSS 调整透明度或亮度
+            sb.AppendLine($"  --vscode-button-hoverBackground: {GetColor(EnvironmentColors.ComboBoxButtonMouseOverBackgroundColorKey)};");
+
+            // Text / 文本
+            sb.AppendLine($"  --vscode-descriptionForeground: {GetColor(EnvironmentColors.SystemGrayTextColorKey)};");
+
+            // Determine if dark theme / 判断是否为深色主题
+            var bgColor = VSColorTheme.GetThemedColor(EnvironmentColors.ToolWindowBackgroundColorKey);
+            var isDark = (0.299 * bgColor.R + 0.587 * bgColor.G + 0.114 * bgColor.B) < 128;
+
+            if (isDark)
+            {
+                sb.AppendLine("  --vscode-textLink-foreground: #3794ff;");
+                sb.AppendLine("  --vscode-textPreformat-foreground: #d7ba7d;");
+                sb.AppendLine("  --vscode-textBlockQuote-background: rgba(255, 255, 255, 0.1);");
+                sb.AppendLine("  --vscode-textCodeBlock-background: #0a0a0a;");
+                sb.AppendLine("  --vscode-badge-background: #4d4d4d;");
+                sb.AppendLine("  --vscode-badge-foreground: #ffffff;");
+                sb.AppendLine("  --vscode-icon-foreground: #c5c5c5;");
+                sb.AppendLine("  --vscode-toolbar-hoverBackground: rgba(90, 93, 94, 0.31);");
+                sb.AppendLine("  --vscode-button-secondaryBackground: #3a3d41;");
+            }
+            else
+            {
+                sb.AppendLine("  --vscode-textLink-foreground: #0066bf;");
+                sb.AppendLine("  --vscode-textPreformat-foreground: #a31515;");
+                sb.AppendLine("  --vscode-textBlockQuote-background: rgba(0, 0, 0, 0.05);");
+                sb.AppendLine("  --vscode-textCodeBlock-background: #f3f3f3;");
+                sb.AppendLine("  --vscode-badge-background: #c4c4c4;");
+                sb.AppendLine("  --vscode-badge-foreground: #333333;");
+                sb.AppendLine("  --vscode-icon-foreground: #424242;");
+                sb.AppendLine("  --vscode-toolbar-hoverBackground: rgba(184, 184, 184, 0.31);");
+                sb.AppendLine("  --vscode-button-secondaryBackground: #5f6a79;");
+            }
+
+            sb.AppendLine("}");
+            return sb.ToString();
+
+            string GetColor(ThemeResourceKey key)
+            {
+                try
+                {
+                    var color = VSColorTheme.GetThemedColor(key);
+                    return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+                }
+                catch (Exception ex)
+                {
+                    LogService.Error($"[GenerateThemeCss] Failed to get color for key {key?.GetType().Name}", ex);
+                    return "#000000";
+                }
+            }
+        }
+    }
+}
