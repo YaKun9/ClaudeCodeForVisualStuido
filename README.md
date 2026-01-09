@@ -1,24 +1,24 @@
 # ClaudeCodeForVS
 
-A Visual Studio extension that integrates Claude Code into the IDE, providing a chat UI with editor context, file references, and command execution through the Claude CLI.
+A Visual Studio extension that integrates Claude Code into the IDE, providing a chat UI, editor context, file references, and command execution through the Claude CLI.
 
 English | [简体中文](README.zh-CN.md)
 
 ## Features
 
 - Chat UI inside Visual Studio (tool window).
-- Optional editor context tracking (active file, selection).
-- File picker for quick file references.
-- Streams Claude CLI output into the chat timeline.
-- Logs to Serilog with daily rolling files.
+- Optional editor context tracking (current file, selected content).
+- File picker for convenient file references.
+- Streams Claude CLI output into a timeline.
+- Logging with Serilog and daily rolling files.
 
 ## Requirements
 
 - Visual Studio 2022 or 2026 (2026 recommended).
-- WebView2 runtime (installed with modern Visual Studio).
+- WebView2 runtime (included with modern Visual Studio).
 - Claude CLI available on PATH.
 
-## Install
+## Installation
 
 Build and install the VSIX from this repository.
 
@@ -30,20 +30,12 @@ Build and install the VSIX from this repository.
 
 ## Configuration
 
-- The extension calls `claude` via the CLI.
+- The extension invokes `claude` via the CLI.
 - Make sure `claude` is available in your system PATH.
-
-## Development
-
-Build:
-
-```bash
-dotnet build
-```
 
 ## Logs
 
-Logs are written under:
+Logs are written to:
 
 ```
 %LOCALAPPDATA%\ClaudeCodeForVS\Logs

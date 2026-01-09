@@ -33,14 +33,6 @@
 - 扩展通过 CLI 调用 `claude`。
 - 请确保 `claude` 在系统 PATH 中可用。
 
-## 开发
-
-构建：
-
-```bash
-dotnet build
-```
-
 ## 日志
 
 日志输出路径：
