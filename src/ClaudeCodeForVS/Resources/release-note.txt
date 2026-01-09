@@ -1,0 +1,13 @@
+# ClaudeCodeForVS 更新日志
+
+## v1.3.10 (2026-01-09)
+
+### 修复
+- 修复 VSIX 市场安装失败问题：将 `InstalledByMsi` 设置为 `false`，解决通过扩展市场下载安装时报错的问题
+
+---
+
+## v1.3.9
+
+### 功能
+- Claude Code Chat 集成 Visual Studio
