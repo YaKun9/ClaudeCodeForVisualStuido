@@ -1,46 +1,63 @@
 # ClaudeCodeForVS
 
-一个将 Claude Code 集成到 Visual Studio 的扩展，提供聊天界面、编辑器上下文、文件引用以及通过 Claude CLI 执行命令的能力。
-
 [English](README.md) | 简体中文
 
-## 功能
+> 🤖 让 Claude 成为你的 Visual Studio 编程搭档！一个将 Claude Code ~~深度~~集成到 IDE 的扩展，带来丝滑的 AI 辅助编码体验。
 
-- Visual Studio 内置聊天窗口（工具窗口）。
-- 可选的编辑器上下文跟踪（当前文件、选中内容）。
-- 文件选择器，便捷添加文件引用。
-- 将 Claude CLI 流式输出渲染到时间线。
-- 使用 Serilog 进行日志记录并按天滚动。
+这是一个将 Claude Code 集成到 Visual Studio 的扩展，提供聊天界面、编辑器上下文、文件引用以及通过 Claude CLI 执行命令的能力。
 
-## 环境要求
+## ✨ 功能特性
 
-- Visual Studio 2022 或 2026（推荐 2026）。
-- WebView2 运行时（现代 Visual Studio 自带）。
-- Claude CLI 已加入 PATH。
+- 🎨 **内置聊天窗口** - 在 Visual Studio 中直接打开工具窗口，无需切换应用
+- 🎯 **智能上下文跟踪** - 可选捕获当前文件和选中内容，让 Claude 更懂你的代码
+- 📁 **便捷文件引用** - 文件选择器轻松添加文件引用，无需手动输入路径
+- ⚡ **流式输出渲染** - Claude CLI 的响应实时呈现在时间线中，体验流畅自然
+- 📝 **完善的日志系统** - 基于 Serilog 记录运行日志，按天滚动存储，问题排查更轻松
 
-## 安装
+## 💡 关于本项目
 
-从本仓库构建并安装 VSIX。
+**🤖 AI 生成声明**
 
-## 快速开始
+本项目代码主要由 AI 自动生成，通过 Claude Code 的强大能力，将自然语言需求转化为高质量的生产代码。这不仅是实用的开发工具，更是展示 AI 辅助编程可能性的探索项目。
 
-1) 打开 Visual Studio。
-2) 扩展菜单中选择 "Open Claude Chat"。
-3) 输入提示并运行。
+## 🔧 环境要求
 
-## 配置
+- **Visual Studio** 2022 或 2026（⭐ 推荐 2026 以获得最佳体验）
+- **WebView2 运行时**（现代 Visual Studio 已自带）
+- **Claude CLI** 已配置并加入系统 PATH
 
-- 扩展通过 CLI 调用 `claude`。
-- 请确保 `claude` 在系统 PATH 中可用。
+## 🚀 安装方式
 
-## 日志
+从本仓库构建并安装 VSIX 扩展包即可开始使用。
 
-日志输出路径：
+## 🎮 快速开始
+
+1️⃣ 打开 Visual Studio
+
+2️⃣ 在扩展菜单中选择 **"Open Claude Chat"** 打开聊天窗口
+
+3️⃣ 输入你的提示词，开始与 Claude 对话！
+
+## ⚙️ 配置说明
+
+- 扩展通过命令行调用 `claude` 工具
+- 使用前请确保 `claude` 已正确安装并在系统 PATH 中可用
+- 首次使用可能需要配置 Claude API 密钥
+
+## 📋 日志位置
+
+运行日志输出到以下路径：
 
 ```
 %LOCALAPPDATA%\ClaudeCodeForVS\Logs
 ```
 
-## 许可证
+遇到问题时查看日志可以帮你快速定位原因。
 
-见 `LICENSE`。
+## 📄 许可证
+
+见 [LICENSE](LICENSE) 文件。
+
+---
+
+⭐ 如果这个项目对你有帮助，欢迎给个 Star！有问题也欢迎提 Issue。
